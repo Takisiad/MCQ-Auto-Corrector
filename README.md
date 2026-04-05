@@ -57,3 +57,4 @@ python manage.py runserver
 - [ ] omr — OpenCV OMR pipeline
 - [ ] frontend — SvelteKit
 # MCQ-Auto-Corrector
+# MCQ-Auto-Corrector
