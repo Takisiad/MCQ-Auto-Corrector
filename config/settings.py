@@ -4,20 +4,20 @@ import os
 
 import environ
 
-env = environ.Env()
-environ.Env.read_env()
-
-SECRET_KEY = env('SECRET_KEY')
-DEBUG       = env.bool('DEBUG', default=False)
-
+# ── Environment ───────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-change-this-in-production'
+env = environ.Env(
+    DEBUG=(bool, False),
+    ALLOWED_HOSTS=(list, ['localhost', '127.0.0.1']),
+)
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-DEBUG = True
+SECRET_KEY    = env('SECRET_KEY')
+DEBUG         = env('DEBUG')
+ALLOWED_HOSTS = env('ALLOWED_HOSTS')
 
-ALLOWED_HOSTS = ['*']
-
+# ── Apps ──────────────────────────────────────────────
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_celery_results',
     'accounts',
@@ -35,6 +36,7 @@ INSTALLED_APPS = [
     'results',
 ]
 
+# ── Middleware ────────────────────────────────────────
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -46,9 +48,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'config.urls'
+# ── URL / Auth ────────────────────────────────────────
+ROOT_URLCONF    = 'config.urls'
 AUTH_USER_MODEL = 'accounts.User'
 
+# ── Templates ─────────────────────────────────────────
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -65,6 +69,7 @@ TEMPLATES = [
     },
 ]
 
+# ── Database ──────────────────────────────────────────
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -72,49 +77,23 @@ DATABASES = {
     }
 }
 
-COUCHDB_URL      = 'http://localhost:5984'
-COUCHDB_USER     = 'admin'
-COUCHDB_PASSWORD = 'admin'
+# ── CouchDB ──────────────────────────────────────────
+COUCHDB_URL      = env('COUCHDB_URL', default='http://localhost:5984')
+COUCHDB_USER     = env('COUCHDB_USER', default='admin')
+COUCHDB_PASSWORD = env('COUCHDB_PASSWORD', default='admin')
 COUCHDB_DATABASES = {
     'exams':       'mcq_exams',
     'submissions': 'mcq_submissions',
     'modules':     'mcq_modules',
 }
 
-CELERY_BROKER_URL     = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'django-db'
+# ── Celery ────────────────────────────────────────────
+CELERY_BROKER_URL      = env('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND  = 'django-db'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT  = ['json']
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-}
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME':  timedelta(hours=8),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-}
-
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-]
-
-STATIC_URL = '/static/'
-MEDIA_URL  = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE     = 'UTC'
-USE_I18N      = True
-USE_TZ        = True
-
-# Rate limiting
+# ── REST Framework ────────────────────────────────────
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -127,25 +106,38 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '20/hour',    # 20 requests per hour for anonymous
-        'user': '500/hour',   # 500 per hour for logged in users
-        'login': '5/minute',  # 5 login attempts per minute
-    }
+        'anon':  '20/hour',
+        'user':  '500/hour',
+        'login': '5/minute',
+    },
 }
 
-# JWT security
-from datetime import timedelta
+# ── JWT ───────────────────────────────────────────────
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME':   timedelta(hours=8),
-    'REFRESH_TOKEN_LIFETIME':  timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS':   True,   # new refresh token on every refresh
-    'BLACKLIST_AFTER_ROTATION': True,  # old refresh token is invalid
-    'AUTH_HEADER_TYPES':       ('Bearer',),
+    'ACCESS_TOKEN_LIFETIME':    timedelta(hours=8),
+    'REFRESH_TOKEN_LIFETIME':   timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS':    True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES':        ('Bearer',),
 }
 
-# Security headers
-SECURE_BROWSER_XSS_FILTER     = True
-SECURE_CONTENT_TYPE_NOSNIFF   = True
-X_FRAME_OPTIONS                = 'DENY'
-CORS_ALLOWED_ORIGINS           = ['http://localhost:5173']
-CORS_ALLOW_CREDENTIALS         = True
+# ── CORS ──────────────────────────────────────────────
+CORS_ALLOWED_ORIGINS   = ['http://localhost:5173']
+CORS_ALLOW_CREDENTIALS = True
+
+# ── Static / Media ───────────────────────────────────
+STATIC_URL = '/static/'
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# ── Misc ─────────────────────────────────────────────
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+LANGUAGE_CODE      = 'en-us'
+TIME_ZONE          = 'UTC'
+USE_I18N           = True
+USE_TZ             = True
+
+# ── Security headers ─────────────────────────────────
+SECURE_BROWSER_XSS_FILTER   = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS             = 'DENY'

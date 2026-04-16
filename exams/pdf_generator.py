@@ -3,6 +3,7 @@ import reportlab.lib.pagesizes as pagesizes
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
 from io import BytesIO
 from pathlib import Path
 import uuid

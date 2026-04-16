@@ -98,8 +98,8 @@ def sort_corners(pts: np.ndarray) -> np.ndarray:
 def read_qr(image: np.ndarray) -> tuple:
     """
     Read QR code from the exam sheet.
-    Returns (exam_id, student_id)
-    QR format: EXAM:uuid|STU:student_id
+    Returns (exam_id, module_code)
+    QR format: EXAM:<id>|MOD:<module_code>
     """
     detector  = cv2.QRCodeDetector()
     data, _, _ = detector.detectAndDecode(image)
@@ -107,11 +107,11 @@ def read_qr(image: np.ndarray) -> tuple:
     if not data:
         raise ValueError("QR code not found")
 
-    parts      = dict(p.split(":", 1) for p in data.split("|") if ":" in p)
-    exam_id    = parts.get("EXAM", "")
-    student_id = parts.get("STU", "")
+    parts       = dict(p.split(":", 1) for p in data.split("|") if ":" in p)
+    exam_id     = parts.get("EXAM", "")
+    module_code = parts.get("MOD", "")
 
-    return exam_id, student_id
+    return exam_id, module_code
 
 
 def read_bubbles(image: np.ndarray, bubble_map: dict) -> tuple:
@@ -172,6 +172,9 @@ def check_confidence(answers: dict, confidences: dict) -> tuple:
     Flag submission if any question has low confidence
     or too many unanswered questions.
     """
+    if not answers:
+        return True, "No answers detected"
+
     low  = [q for q, c in confidences.items() if c < CONFIDENCE_THRESHOLD]
     blank = [q for q, a in answers.items() if not a]
 

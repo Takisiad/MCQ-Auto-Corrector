@@ -1,11 +1,17 @@
+import os
+from pathlib import Path
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.conf import settings
 from django.utils import timezone
+
 from .models import ExamSubmission, SubmissionStatus
 from .serializers import ExamSubmissionSerializer
 from exams.models import Exam
+from omr.tasks import process_scan
 
 
 @api_view(['GET'])
@@ -127,20 +133,15 @@ def exam_statistics(request, exam_id):
     failed  = len(grades) - passed
 
     return Response({
-        'exam_id':       exam_id,
+        'exam_id':        exam_id,
         'total_students': len(grades),
-        'average_score': round(average, 2),
-        'highest_score': round(max(grades), 2) if grades else 0,
-        'lowest_score':  round(min(grades), 2) if grades else 0,
-        'passed':        passed,
-        'failed':        failed,
-        'pass_rate':     round((passed / len(grades)) * 100, 1) if grades else 0,
+        'average_score':  round(average, 2),
+        'highest_score':  round(max(grades), 2) if grades else 0,
+        'lowest_score':   round(min(grades), 2) if grades else 0,
+        'passed':         passed,
+        'failed':         failed,
+        'pass_rate':      round((passed / len(grades)) * 100, 1) if grades else 0,
     })
-    import os
-from django.conf import settings
-from pathlib import Path
-from .models import ExamSubmission, SubmissionStatus
-from omr.tasks import process_scan
 
 
 @api_view(['POST'])
@@ -180,11 +181,11 @@ def upload_scans(request, exam_id):
     image_paths = split_pdf(file_path, upload_dir)
 
     # create one submission per image and queue Celery task
+    # student is left null — it will be filled from the QR code during processing
     submission_ids = []
     for img_path in image_paths:
         sub = ExamSubmission.objects.create(
             exam       = exam,
-            student    = request.user,
             image_path = str(img_path),
             status     = SubmissionStatus.PENDING,
         )
@@ -201,8 +202,8 @@ def split_pdf(pdf_path, output_dir):
     """Split PDF into individual page images."""
     try:
         from pdf2image import convert_from_path
-        pages  = convert_from_path(str(pdf_path), dpi=300)
-        paths  = []
+        pages = convert_from_path(str(pdf_path), dpi=300)
+        paths = []
         for i, page in enumerate(pages):
             out = output_dir / f"page_{i+1:04d}.png"
             page.save(str(out), 'PNG')

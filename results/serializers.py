@@ -9,6 +9,7 @@ class ExamSubmissionSerializer(serializers.ModelSerializer):
         model  = ExamSubmission
         fields = [
             'id', 'exam', 'student',
+            'image_path',
             'machine_score', 'manual_override',
             'final_grade', 'status',
             'is_flagged', 'flag_reason',

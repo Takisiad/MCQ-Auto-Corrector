@@ -10,7 +10,9 @@ class Role(models.TextChoices):
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, password, role, **extra):
+    def create_user(self, email, password, role=None, **extra):
+        if role is None:
+            role = Role.TEACHER
         if not email:
             raise ValueError('Email is required')
         email = self.normalize_email(email)

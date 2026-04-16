@@ -37,14 +37,9 @@ def process_scan(self, submission_id: int, image_path: str):
         # run OMR pipeline
         result = process_image(image_path, bubble_map, questions)
 
-        # update student id if found in QR
-        if result['student_id']:
-            from accounts.models import User
-            try:
-                student = User.objects.get(student_id=result['student_id'])
-                sub.student = student
-            except User.DoesNotExist:
-                pass
+        # Note: QR contains exam_id and module_code, not student_id.
+        # Student identification must be done via a separate mechanism
+        # (e.g., student writes their ID on the sheet, or manual assignment).
 
         # save results
         sub.raw_answers       = result['answers']

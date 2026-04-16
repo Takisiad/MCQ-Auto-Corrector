@@ -16,6 +16,8 @@ class ExamSubmission(models.Model):
     student         = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         limit_choices_to={'role': 'STUDENT'}
     )
     image_path      = models.CharField(max_length=500, blank=True)
